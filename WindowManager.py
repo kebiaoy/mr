@@ -1,14 +1,15 @@
-import win32gui
+import win32api, win32gui, win32con
+from ctypes import *
 
 
-class WindowManager(object):
-    @classmethod
-    def get_all_hwnd(cls):
-        all_hwnd = []
+# 模拟鼠标单击
+def left_button_click():
+    win32api.mouse_event(
+        win32con.MOUSEEVENTF_LEFTDOWN |
+        win32con.MOUSEEVENTF_LEFTUP, 0, 0)
 
-        def find_all_hwnd(hwnd, mouse):
-            if win32gui.IsWindow(hwnd) and win32gui.IsWindowEnabled(hwnd) and win32gui.IsWindowVisible(hwnd):
-                all_hwnd.append(hwnd)
 
-        win32gui.EnumWindows(find_all_hwnd, 0)
-        return all_hwnd
+# 模拟移动鼠标
+def move_cur_pos(x, y):
+    windll.user32.SetCursorPos(x, y)
+

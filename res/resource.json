@@ -1,0 +1,17 @@
+{
+    "users":[
+        {
+            "name":"shakalaka",
+            "user_image":"./res/users_image/shakalake.png"
+        }
+    ],
+    "game":{
+        "width":700,
+        "height":500,
+        "rec_image":"./res/game_rec.png",
+        "game_started":"./res/game_is_start.png",
+		"rec_offset_width":380,
+		"rec_offset_height":349,
+		"capture_interval":400
+    }
+}
