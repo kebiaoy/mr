@@ -19,8 +19,13 @@ class config(QObject):
 
     def get_res(self):
         if self.res_config is None:
-            f = open("./res/resource.json", "r")
+            f = open("./res/resource.json", "r", encoding='UTF-8')
 
             self.res_config = json.load(f)
             f.close()
         return self.res_config
+
+    def save_res(self, res):
+        with open("./res/resource.json", 'w', encoding='utf-8') as json_file:
+            json.dump(res, json_file, ensure_ascii=False)
+        self.res_config = res

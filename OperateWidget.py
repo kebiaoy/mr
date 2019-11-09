@@ -15,12 +15,18 @@ class OperateWidget(QWidget):
         btn = QPushButton()
         btn.setText("启动识别")
         btn.clicked.connect(self.start_recognize)
+        self.use_res_collection = QCheckBox()
+        self.use_res_collection.setText("启用资源收集")
+        self.use_res_collection.setChecked(False)
+        hbox = QHBoxLayout()
         btn_star = QPushButton()
         btn_star.setText("开始游戏")
         btn_star.clicked.connect(self.start_game)
+        hbox.addWidget(btn_star)
+        hbox.addWidget(self.use_res_collection)
         self.text_edit = QTextEdit()
         vbox.addWidget(btn)
-        vbox.addWidget(btn_star)
+        vbox.addLayout(hbox)
         vbox.addWidget(self.text_edit)
         self.setLayout(vbox)
 
@@ -33,6 +39,9 @@ class OperateWidget(QWidget):
 
     def sizeHint(self):
         return QSize(600, 800)
+
+    def use_collection(self):
+        return self.use_res_collection.isChecked()
 
     def show_log(self, str_log):
         datatime = QDateTime.currentDateTime()
