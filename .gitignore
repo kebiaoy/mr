@@ -2,3 +2,5 @@
 temp/
 venv/
 __pycache__/
+res/error/
+res/users_image/

@@ -76,15 +76,20 @@ class Recognition(QObject):
 
     def is_game_over(self, capture_img):
         res = config.instance().get_res()
-        game_over_image = cv.imread(res["game"]["game_over"], 0)
+        game_over_image = self.cv_imread(res["game"]["game_over"])
         rc_rects = self.detect_image(capture_img, game_over_image)
         if len(rc_rects) > 0:
             return True
         return False
 
+    def cv_imread(self, file_path):
+        cv_img = cv.imdecode(np.fromfile(file_path, dtype=np.uint8), -1)
+        cv_img = cv.cvtColor(cv_img, cv.COLOR_BGR2GRAY)
+        return cv_img
+
     def is_game_start(self, capture_img):
         res = config.instance().get_res()
-        started_img = cv.imread(res["game"]["game_started"], 0)
+        started_img = self.cv_imread(res["game"]["game_started"])
         rc_rects = self.detect_image(capture_img, started_img)
         if len(rc_rects) > 0:
             return True
@@ -94,11 +99,11 @@ class Recognition(QObject):
         res = config.instance().get_res()
         directs = res["game"]["direct"]
         for i in range(len(directs)):
-            direct_0 = cv.imread(directs[i]["img"], 0)
+            direct_0 = self.cv_imread(directs[i]["img"])
             rc_rects = self.detect_image(capture_img, direct_0)
             if len(rc_rects) > 0:
                 return i
-            direct_0 = cv.imread(directs[i]["confirm_img"], 0)
+            direct_0 = self.cv_imread(directs[i]["confirm_img"])
             rc_rects = self.detect_image(capture_img, direct_0)
             if len(rc_rects) > 0:
                 return i
@@ -108,22 +113,36 @@ class Recognition(QObject):
         datatime = QDateTime.currentDateTime()
         file_name = file_path + datatime.toString(
             "yyyyMMddhhmmsszzz") + widget.get_user_name() + ".jpg"
-        cv.imwrite(file_name, img)
+        cv.imencode('.jpg', img)[1].tofile(file_name)
 
     def is_user_playing(self, widget, img):
         res = config.instance().get_res()
-        direct = widget.get_user_direct()
-        if direct < 0:
+        direct_area_bottom = res["game"]["direct_area_bottom"]
+        bottom_area = self.get_img_rect(img,
+                                            QRect(direct_area_bottom[0], direct_area_bottom[1], direct_area_bottom[2],
+                                                  direct_area_bottom[3]))
+        direct_area_left = res["game"]["direct_area_left"]
+        left_area = self.get_img_rect(img,
+                                            QRect(direct_area_left[0], direct_area_left[1], direct_area_left[2],
+                                                  direct_area_left[3]))
+        direct_area_right = res["game"]["direct_area_right"]
+        right_area_img = self.get_img_rect(img,
+                                            QRect(direct_area_right[0], direct_area_right[1], direct_area_right[2],
+                                                  direct_area_right[3]))
+        direct_area_top = res["game"]["direct_area_top"]
+        top_area_img = self.get_img_rect(img,
+                                            QRect(direct_area_top[0], direct_area_top[1], direct_area_top[2],
+                                                  direct_area_top[3]))
+        if np.mean(left_area) > 110:
             return False
-        direct_0 = cv.imread(res["game"]["direct"][direct]["img"], 0)
-        rc_rects = self.detect_image(img, direct_0)
-        if len(rc_rects) > 0:
+        if np.mean(right_area_img) > 110:
             return False
-        direct_0 = cv.imread(res["game"]["direct"][direct]["confirm_img"], 0)
-        rc_rects = self.detect_image(img, direct_0)
-        if len(rc_rects) > 0:
+        if np.mean(top_area_img) > 110:
+            return False
+        if np.mean(bottom_area) > 110:
             return True
-        return False
+        return widget.get_is_playing()
+
 
     @pyqtSlot()
     def recgnoze(self):
@@ -132,9 +151,6 @@ class Recognition(QObject):
         # 遍历窗口
         for widget in self.capture_widgets:
             capture_img = self.get_img_rect(img, widget.geometry())
-            if OperateWidget.instance().use_collection() is True:
-                self.save_img(capture_img, widget, res["game"]["collection_dir"])
-
             # 如果游戏还没有开始不识别
             if widget.is_game_start() is False:
                 if self.is_game_start(capture_img) is True:
@@ -148,9 +164,10 @@ class Recognition(QObject):
                         self.save_img(capture_img, widget, res["game"]["error_dir"])
                     else:
                         OperateWidget.instance().show_log("获取用户{}方位成功".format(widget.get_user_name()))
+                        OperateWidget.instance().show_log(
+                            "用户{}方位为".format(widget.get_user_name()) + res["direct_name"][str(direct)])
                         widget.set_user_direct(direct)
                 else:
-                    OperateWidget.instance().show_log("用户{}正在匹配房间".format(widget.get_user_name()))
                     continue
 
             # 判断游戏是否结束
@@ -170,7 +187,11 @@ class Recognition(QObject):
                 gang_peng_card_info = ""
                 for cards in self_card_info:
                     for card in cards:
-                        hand_card_info = hand_card_info + " " + res["card_name"][str(card["card_id"])]["name"]
+                        if card["is_lai"] is True:
+                            hand_card_info = hand_card_info + " " + res["card_name"][str(card["card_id"])][
+                                "name"] + "(癞子)"
+                        else:
+                            hand_card_info = hand_card_info + " " + res["card_name"][str(card["card_id"])]["name"]
                 for cards in self_gang_peng_info:
                     for card in cards:
                         gang_peng_card_info = gang_peng_card_info + " " + res["card_name"][str(card - 100)]["name"]
@@ -181,6 +202,18 @@ class Recognition(QObject):
                 widget.set_is_playing(False)
                 OperateWidget.instance().show_log("用户{}打完牌，等待其它用户出牌".format(widget.get_user_name()))
 
+    @pyqtSlot()
+    def on_capture(self):
+        # 遍历窗口
+        img = self.get_screen_img()
+        res = config.instance().get_res()
+        for widget in self.capture_widgets:
+             capture_img = self.get_img_rect(img, widget.geometry())
+             self.save_img(capture_img, widget, res["game"]["error_dir"])
+        OperateWidget.instance().show_log("保存截图成功")
+
+
+
     def get_all_self_card(self, capture_img, widget):
         res = config.instance().get_res()
         hand_card_dir = res["game"]["bottom_image_hand"]
@@ -188,6 +221,9 @@ class Recognition(QObject):
         bottom_area_img = self.get_img_rect(capture_img,
                                             QRect(bottom_rect[0], bottom_rect[1], bottom_rect[2],
                                                   bottom_rect[3]))
+        # 查找癞子的位置
+        laizi_img = self.cv_imread(res["game"]["lai_zi"])
+        lai_zi_rects = self.detect_image(bottom_area_img, laizi_img, 0.7)
         hand_card = []
         gang_peng = []
         leave_count = res["game"]["handle_card_total"]
@@ -210,6 +246,22 @@ class Recognition(QObject):
                     cards, length = self.find_card(31, 38, bottom_area_img, hand_card_dir, False)
                     leave_count = leave_count - length
                     hand_card.append(cards)
+        # 找完所有手牌 开始查找癞子牌
+        if len(lai_zi_rects) > 0:
+            rect = lai_zi_rects[0]
+            lai_zi_id = None
+            for cards in hand_card:
+                for card in cards:
+                    card_rect = card["rect"]
+                    if lai_zi_id is None:
+                        ret = rect.left() - card_rect.left()
+                        if ret <= res["game"]["lai_zi_offset"] and ret > 0:
+                            lai_zi_id = card["card_id"]
+                            card["is_lai"] = True
+                            continue
+                    if lai_zi_id == card["card_id"]:
+                        card["is_lai"] = True
+                        continue
 
         # 如果手牌没有找齐，开始找杠碰牌
         if leave_count > 0:
@@ -231,7 +283,8 @@ class Recognition(QObject):
 
         if leave_count != 0:
             OperateWidget.instance().show_log("获取用户{}手牌失败".format(widget.get_user_name()))
-            # self.save_img(capture_img, widget, res["game"]["error_dir"])
+            if OperateWidget.instance().use_collection() is True:
+                self.save_img(capture_img, widget, res["game"]["error_dir"])
         return hand_card, gang_peng
 
     def find_card(self, start, end, area_img, temp_dir, is_gang_peng):
@@ -242,17 +295,21 @@ class Recognition(QObject):
             img_dir = temp_dir + "{}.jpg".format(i)
             if file.exists(img_dir) is False:
                 continue
-            template = cv.imread(img_dir, 0)
-            rects = self.detect_image(area_img, template)
+            template = self.cv_imread(img_dir)
+            # 9筒降低识别率
+            if i == 29 or i == 25:
+                rects = self.detect_image(area_img, template, 0.7)
+            else:
+                rects = self.detect_image(area_img, template)
             if is_gang_peng is True:
-                length += 3
                 # 识别到碰牌
                 if len(rects) == 2:
+                    length += 3
                     # 查找有多少个转置
                     img_dir = temp_dir + "{}_t.jpg".format(i)
                     count = 3
                     if file.exists(img_dir) is True:
-                        template_t = cv.imread(img_dir, 0)
+                        template_t = self.cv_imread(img_dir)
                         rects_t = self.detect_image(area_img, template_t)
                         if len(rects_t) > 0:
                             count += len(rects_t)
@@ -260,6 +317,7 @@ class Recognition(QObject):
                         card.append(i)
                     continue
                 if len(rects) == 3:
+                    length += 3
                     for k in range(4):
                         card.append(i)
                     continue
@@ -269,7 +327,8 @@ class Recognition(QObject):
                     card.append(
                         {
                             "card_id": i,
-                            "rect": rect
+                            "rect": rect,
+                            "is_lai": False
                         })
 
         return card, length
@@ -281,7 +340,7 @@ class Recognition(QObject):
     def find_game(self):
         OperateWidget.instance().show_log("识别启动，开始查找目标窗口")
         res = config.instance().get_res()
-        template = cv.imread(res["game"]["rec_image"], 0)
+        template = self.cv_imread(res["game"]["rec_image"])
 
         self.clear_capture_widgets()
         # 获取屏幕截图
@@ -306,7 +365,7 @@ class Recognition(QObject):
                     continue
                 user_name = None
                 for user in res["users"]:
-                    user_img = cv.imread(user["user_image"], 0)
+                    user_img = self.cv_imread(user["user_image"])
                     user_rects = self.detect_image(caputure_img, user_img)
                     if len(user_rects) > 0:
                         user_name = user["name"]
@@ -330,7 +389,7 @@ class Recognition(QObject):
                             "name": user_name,
                             "user_image": "./res/users_image/{}.jpg".format(user_name)
                         })
-                        cv.imwrite("./res/users_image/{}.jpg".format(user_name), user_img_array)
+                        cv.imencode('.jpg', user_img_array)[1].tofile("./res/users_image/{}.jpg".format(user_name))
                         config.instance().save_res(res)
                     else:
                         continue
@@ -352,10 +411,9 @@ class Recognition(QObject):
     def get_img_rect(self, img, rect):
         return img[rect.top():(rect.top() + rect.height()), rect.left():(rect.left() + rect.width())]
 
-    def detect_image(self, src_img, dest_img):
+    def detect_image(self, src_img, dest_img, threshold=0.90):
         img_gray = cv.cvtColor(src_img, cv.COLOR_BGR2GRAY)
         res = cv.matchTemplate(img_gray, dest_img, cv.TM_CCOEFF_NORMED)
-        threshold = 0.8
         loc = np.where(res >= threshold)
         w = dest_img.shape[0]
         h = dest_img.shape[1]

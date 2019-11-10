@@ -8,6 +8,8 @@ class OperateWidget(QWidget):
     _instance_lock = threading.Lock()
     start_recognize = pyqtSignal()
     start_game = pyqtSignal()
+    capture = pyqtSignal()
+    reload = pyqtSignal()
 
     def __init__(self):
         super(OperateWidget, self).__init__()
@@ -25,8 +27,16 @@ class OperateWidget(QWidget):
         hbox.addWidget(btn_star)
         hbox.addWidget(self.use_res_collection)
         self.text_edit = QTextEdit()
+        btn_capture = QPushButton()
+        btn_capture.setText("截图")
+        btn_capture.clicked.connect(self.capture)
+        reload_btn = QPushButton()
+        reload_btn.setText("重新加载资源")
+        reload_btn.clicked.connect(self.reload)
         vbox.addWidget(btn)
         vbox.addLayout(hbox)
+        vbox.addWidget(btn_capture)
+        vbox.addWidget(reload_btn)
         vbox.addWidget(self.text_edit)
         self.setLayout(vbox)
 

@@ -1,8 +1,12 @@
 {
     "users":[
         {
-            "name":"shakalaka",
-            "user_image":"./res/users_image/shakalaka.jpg"
+            "name":"空景孤忧",
+            "user_image":"./res/users_image/空景孤忧.jpg"
+        },
+        {
+            "name":"wnev",
+            "user_image":"./res/users_image/wnev.jpg"
         }
     ],
     "game":{
@@ -14,40 +18,57 @@
         "rec_offset_width":647,
         "rec_offset_height":20,
         "capture_interval":1000,
+        "start_peng":"./res/game/start_peng.jpg",
         "user_name_start_area":[
             14,
             23,
             25,
             25
         ],
-		"sort_x":150,
-		"sort_y":150,
+		"direct_area_bottom":[330,233,33,21],
+		"direct_area_left":[306,197,21,32],
+		"direct_area_right":[370,197,21,32],
+		"direct_area_top":[330,175,33,23],
+        "sort_x":150,
+        "sort_y":150,
         "lai_zi":"./res/game/laizi.jpg",
-		"collection_dir":"./res/temp_res/",
-		"error_dir":"./res/error/",
-		"game_over":"./res/game/game_over.jpg",
-		"bottom_area":[33,384,650,86],
-		"handle_card_total":14,
-		"bottom_image_hand":"./res/bottom/hand_card/",
-		"direct":[
-			{
-				"img":"./res/game/north.jpg",
-				"confirm_img":"./res/game/north_1.jpg"
-			},
-			{
-				"img":"./res/game/south.jpg",
-				"confirm_img":"./res/game/south_1.jpg"
-			},
-			{
-				"img":"./res/game/west.jpg",
-				"confirm_img":"./res/game/west_1.jpg"
-			},
-			{
-				"img":"./res/game/east.jpg",
-				"confirm_img":"./res/game/east_1.jpg"
-			}
-		]
+        "lai_zi_offset":30,
+        "collection_dir":"./res/temp_res/",
+        "error_dir":"./res/error/",
+        "game_over":"./res/game/game_over.jpg",
+        "bottom_area":[
+            33,
+            384,
+            650,
+            86
+        ],
+        "handle_card_total":14,
+        "bottom_image_hand":"./res/bottom/hand_card/",
+        "direct":[
+            {
+                "img":"./res/game/north.jpg",
+                "confirm_img":"./res/game/north_1.jpg"
+            },
+            {
+                "img":"./res/game/south.jpg",
+                "confirm_img":"./res/game/south_1.jpg"
+            },
+            {
+                "img":"./res/game/west.jpg",
+                "confirm_img":"./res/game/west_1.jpg"
+            },
+            {
+                "img":"./res/game/east.jpg",
+                "confirm_img":"./res/game/east_1.jpg"
+            }
+        ]
     },
+	"direct_name":{
+		"0":"北",
+		"1":"南",
+		"2":"西",
+		"3":"东"
+	},
     "card_name":{
         "1":{
             "name":"1万"
@@ -145,10 +166,10 @@
         "35":{
             "name":"中"
         },
-		"36":{
+        "36":{
             "name":"发"
         },
-		"37":{
+        "37":{
             "name":"白板"
         }
     }
